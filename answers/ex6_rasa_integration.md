@@ -2,28 +2,23 @@
 
 ## Your answer
 
-The RasaStructuredHalf subclass overrides run() to POST a booking
-intent to Rasa's REST webhook and interpret the response. Input
-payload flows: loop half produces raw booking data → StructuredHalf
-calls normalise_booking_payload (via validator.py) to produce a
-Rasa-shaped message with canonical types → urllib POST to Rasa →
-parse response for {action: committed} or {action: rejected} custom
-slots.
+Ex6 runs Rasa CALM as the structured half that confirms/rejects bookings against policy. The committed evidence is the Ex7 round-trip (`sessions/sess_769562b1f1cf`),
+which drives real CALM both ways: round 1 (party 12) hit
+`validation_error = party_too_large` → `utter_booking_rejected`, logged as
+`structured→loop` with `reason: party_too_large` (`trace.jsonl:7`); round 2
+(party 6) was confirmed → `structured→complete` (`trace.jsonl:14`). A standalone
+Ex6 run additionally returned reference `BK-7D401E9E` for party 6 / £200, and a
+£500 deposit returned `deposit_too_high` — both verified live, though those
+single HTTP-call runs don't persist a trace.
 
-For offline mode we spawn a stdlib http.server thread that mimics a
-Rasa webhook. It always confirms, which is enough for unit tests.
-Rejection is exercised in Ex7 where the loop half's arguments drive
-the decision.
-
-Three design choices worth noting: (1) we raise ValidationFailed in
-normalise_booking_payload and catch it in run() rather than letting
-it propagate; the StructuredHalf contract demands a HalfResult. (2)
-Network errors return success=False with SA_EXT_SERVICE_UNAVAILABLE
-— the caller decides whether to retry. (3) The stable sender_id is a
-hash of (venue+date+time) so the Rasa tracker is consistent across
-retries within one session.
+The validator's normalisation showed up live too: `"25th April 2026"`→
+`2026-04-25`, `"7:30pm"`→`19:30`, `"Haymarket Tap"`→`haymarket_tap`,
+`"£200"`→`200`. The stdlib mock replicates the same thresholds, so offline tests
+give identical verdicts; failures map to `escalate` (validation) or
+`SA_EXT_SERVICE_UNAVAILABLE`/`SA_EXT_TIMEOUT` (network), never a crash.
 
 ## Citations
 
-- starter/rasa_half/validator.py — normalise_booking_payload + helpers
-- starter/rasa_half/structured_half.py — RasaStructuredHalf.run + mock server
+- `sessions/sess_769562b1f1cf/logs/trace.jsonl:7,14` (real CALM reject + confirm)
+- `rasa_project/actions/actions.py:29-30,119-123` (party ≤ 8 / deposit ≤ 300 rules)
+- `starter/rasa_half/validator.py`, `structured_half.py` (normalise + `run`)

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "sg_1",
+    "description": "Search for and compile key details of a specific Edinburgh venue suitable for events",
+    "success_criterion": "Specific venue's name, location, capacity, amenities, and contact information are obtained",
+    "estimated_tool_calls": 1,
+    "depends_on": [],
+    "assigned_half": "loop",
+    "status": "pending"
+  },
+  {
+    "id": "sg_2",
+    "description": "Draft the venue flyer using the collected details, including venue features, location, and contact information",
+    "success_criterion": "Complete flyer draft is generated with all necessary content",
+    "estimated_tool_calls": 1,
+    "depends_on": [
+      "sg_1"
+    ],
+    "assigned_half": "loop",
+    "status": "pending"
+  }
+]

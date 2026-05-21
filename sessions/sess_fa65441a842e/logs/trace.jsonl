@@ -1,0 +1,6 @@
+{"event_type": "voice.utterance_in", "actor": "user", "timestamp": "2026-05-21T20:15:13.036170+00:00", "payload": {"text": "Evening Alasdair. Any chance of a table for 6 this Friday at half seven?", "turn": 0, "mode": "text"}}
+{"event_type": "voice.utterance_out", "actor": "manager", "timestamp": "2026-05-21T20:15:14.495725+00:00", "payload": {"text": "Aye, we can do that. I'll pencil you in for Friday at half seven. What's the contact number?", "turn": 0, "mode": "text"}}
+{"event_type": "voice.utterance_in", "actor": "user", "timestamp": "2026-05-21T20:15:14.495890+00:00", "payload": {"text": "Grand. We can put down a 150 pound deposit to hold it.", "turn": 1, "mode": "text"}}
+{"event_type": "voice.utterance_out", "actor": "manager", "timestamp": "2026-05-21T20:15:16.130250+00:00", "payload": {"text": "That's fine. I'll take the deposit. What's the contact number?", "turn": 1, "mode": "text"}}
+{"event_type": "voice.utterance_in", "actor": "user", "timestamp": "2026-05-21T20:15:16.130414+00:00", "payload": {"text": "Perfect. Contact number is 07700 900123. Cheers.", "turn": 2, "mode": "text"}}
+{"event_type": "voice.utterance_out", "actor": "manager", "timestamp": "2026-05-21T20:15:16.450199+00:00", "payload": {"text": "Sorted, thanks. See you Friday.", "turn": 2, "mode": "text"}}

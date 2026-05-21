@@ -1,0 +1,20 @@
+{
+  "ticket_id": "tk_f803dcd6",
+  "operation": "executor.run_subgoal/sg_1",
+  "started_at": "2026-05-21T20:07:08.399432+00:00",
+  "completed_at": "2026-05-21T20:07:49.287763+00:00",
+  "duration_ms": 40888,
+  "outputs": [
+    {
+      "path": "/home/witnessofthe/.local/share/sovereign-agent/examples/ex5-edinburgh-research/sess_63d9cfe78440/logs/tickets/tk_f803dcd6/raw_output.json",
+      "sha256": "fdfdf4546ea6a99e1a5ce8f8d81fda01bfe7976896c1f43335c92eec90dee648",
+      "size_bytes": 2335,
+      "content_type": "application/json"
+    }
+  ],
+  "metrics": {
+    "tool_calls": 4,
+    "turns_used": 4,
+    "handoff_requested": true
+  }
+}

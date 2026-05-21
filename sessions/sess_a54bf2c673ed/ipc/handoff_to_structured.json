@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "from_half": "loop",
+  "to_half": "structured",
+  "written_at": "2026-05-21T20:09:50.085867+00:00",
+  "session_id": "sess_a54bf2c673ed",
+  "reason": "Missing required parameters for cost calculation",
+  "context": "Subgoal sg_3: Calculate total cost for venue with catering",
+  "data": {
+    "missing_parameters": [
+      "venue_id",
+      "party_size",
+      "duration_hours"
+    ]
+  },
+  "return_instructions": ""
+}

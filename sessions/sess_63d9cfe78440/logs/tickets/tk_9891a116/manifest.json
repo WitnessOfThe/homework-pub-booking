@@ -1,0 +1,21 @@
+{
+  "ticket_id": "tk_9891a116",
+  "operation": "planner.plan",
+  "started_at": "2026-05-21T20:06:50.260230+00:00",
+  "completed_at": "2026-05-21T20:07:08.389199+00:00",
+  "duration_ms": 18128,
+  "outputs": [
+    {
+      "path": "/home/witnessofthe/.local/share/sovereign-agent/examples/ex5-edinburgh-research/sess_63d9cfe78440/logs/tickets/tk_9891a116/raw_output.json",
+      "sha256": "30de8ae6fda9539fee7b91ece8ce9bb88689f1ddba684e175b76943c9a4b171f",
+      "size_bytes": 681,
+      "content_type": "application/json"
+    }
+  ],
+  "metrics": {
+    "num_subgoals": 2,
+    "llm_tokens_in": 262,
+    "llm_tokens_out": 2813,
+    "llm_model": "Qwen/Qwen3-Next-80B-A3B-Thinking"
+  }
+}

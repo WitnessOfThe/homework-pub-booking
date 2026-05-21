@@ -14,12 +14,29 @@ The grader checks for:
 
 from __future__ import annotations
 
+import html
+import json
 from pathlib import Path
 
 from sovereign_agent.session.directory import Session
-from sovereign_agent.tools.registry import ToolRegistry, ToolResult, _RegisteredTool
+from sovereign_agent.tools.registry import ToolError, ToolRegistry, ToolResult, _RegisteredTool
+
+from starter.edinburgh_research.integrity import record_tool_call
 
 _SAMPLE_DATA = Path(__file__).parent / "sample_data"
+
+
+def _load_fixture(name: str) -> object:
+    """Read a JSON fixture from sample_data/. Raises ToolError (which the
+    registry catches and converts to a failed ToolResult) if it's absent."""
+    path = _SAMPLE_DATA / name
+    if not path.exists():
+        raise ToolError(
+            code="SA_TOOL_DEPENDENCY_MISSING",
+            message=f"required fixture {name!r} not found at {path}",
+            context={"fixture": name},
+        )
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 # ---------------------------------------------------------------------------
@@ -41,9 +58,34 @@ def venue_search(near: str, party_size: int, budget_max_gbp: int = 1000) -> Tool
     MUST call record_tool_call(...) before returning so the integrity
     check can see what data was produced.
     """
-    # TODO 1a: load venues.json. Raise ToolError(SA_TOOL_DEPENDENCY_MISSING)
-    #          if the file is absent.
-    raise NotImplementedError("TODO 1: implement venue_search")
+    venues = _load_fixture("venues.json")  # raises SA_TOOL_DEPENDENCY_MISSING if absent
+    near_l = str(near).lower()
+
+    results = [
+        v
+        for v in venues
+        if v.get("open_now")
+        and near_l in str(v.get("area", "")).lower()
+        and v.get("seats_available_evening", 0) >= party_size
+        and (v.get("hire_fee_gbp", 0) + v.get("min_spend_gbp", 0)) <= budget_max_gbp
+    ]
+
+    output = {
+        "near": near,
+        "party_size": party_size,
+        "results": results,
+        "count": len(results),
+    }
+    record_tool_call(
+        "venue_search",
+        {"near": near, "party_size": party_size, "budget_max_gbp": budget_max_gbp},
+        output,
+    )
+    return ToolResult(
+        success=True,
+        output=output,
+        summary=f"venue_search({near}, party={party_size}): {len(results)} result(s)",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +103,27 @@ def get_weather(city: str, date: str) -> ToolResult:
 
     MUST call record_tool_call(...) before returning.
     """
-    raise NotImplementedError("TODO 2: implement get_weather")
+    weather = _load_fixture("weather.json")  # raises SA_TOOL_DEPENDENCY_MISSING if absent
+    city_key = str(city).lower()
+
+    city_data = weather.get(city_key)
+    if not isinstance(city_data, dict) or date not in city_data:
+        err = ToolError(
+            code="SA_TOOL_INVALID_INPUT",
+            message=f"no scripted weather for city={city!r} date={date!r}",
+            context={"city": city_key, "date": date},
+        )
+        record_tool_call("get_weather", {"city": city, "date": date}, {})
+        return ToolResult(success=False, output={}, summary=str(err), error=err)
+
+    entry = city_data[date]
+    output = {"city": city_key, "date": date, **entry}
+    record_tool_call("get_weather", {"city": city, "date": date}, output)
+    return ToolResult(
+        success=True,
+        output=output,
+        summary=f"get_weather({city}, {date}): {entry['condition']}, {entry['temperature_c']}C",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +160,70 @@ def calculate_cost(
 
     MUST call record_tool_call(...) before returning.
     """
-    raise NotImplementedError("TODO 3: implement calculate_cost")
+    catering = _load_fixture("catering.json")  # raises SA_TOOL_DEPENDENCY_MISSING if absent
+    venues = _load_fixture("venues.json")
+
+    base_rates = catering["base_rates_gbp_per_head"]
+    venue_modifiers = catering["venue_modifiers"]
+    venue = next((v for v in venues if v.get("id") == venue_id), None)
+
+    def _reject(reason: str) -> ToolResult:
+        err = ToolError(
+            code="SA_TOOL_INVALID_INPUT", message=reason, context={"venue_id": venue_id}
+        )
+        record_tool_call(
+            "calculate_cost",
+            {"venue_id": venue_id, "party_size": party_size, "duration_hours": duration_hours},
+            {},
+        )
+        return ToolResult(success=False, output={}, summary=str(err), error=err)
+
+    if catering_tier not in base_rates:
+        return _reject(f"unknown catering_tier {catering_tier!r}")
+    if venue_id not in venue_modifiers or venue is None:
+        return _reject(f"unknown venue_id {venue_id!r}")
+
+    base_per_head = base_rates[catering_tier]
+    venue_mult = venue_modifiers[venue_id]
+    subtotal = base_per_head * venue_mult * party_size * max(1, duration_hours)
+    service = subtotal * catering["service_charge_percent"] / 100
+    venue_floor = venue.get("hire_fee_gbp", 0) + venue.get("min_spend_gbp", 0)
+    total = subtotal + service + venue_floor
+
+    # Deposit thresholds from catering.json's deposit_policy.
+    if total < 300:
+        deposit = 0
+    elif total <= 1000:
+        deposit = round(total * 0.20)
+    else:
+        deposit = round(total * 0.30)
+
+    total_int = round(total)
+    output = {
+        "venue_id": venue_id,
+        "party_size": party_size,
+        "duration_hours": duration_hours,
+        "catering_tier": catering_tier,
+        "subtotal_gbp": round(subtotal),
+        "service_gbp": round(service),
+        "total_gbp": total_int,
+        "deposit_required_gbp": deposit,
+    }
+    record_tool_call(
+        "calculate_cost",
+        {
+            "venue_id": venue_id,
+            "party_size": party_size,
+            "duration_hours": duration_hours,
+            "catering_tier": catering_tier,
+        },
+        output,
+    )
+    return ToolResult(
+        success=True,
+        output=output,
+        summary=f"calculate_cost({venue_id}, {party_size}): total £{total_int}, deposit £{deposit}",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -126,7 +251,76 @@ def generate_flyer(session: Session, event_details: dict) -> ToolResult:
     IMPORTANT: this tool MUST be registered with parallel_safe=False
     because it writes a file.
     """
-    raise NotImplementedError("TODO 4: implement generate_flyer")
+    ed = dict(event_details or {})
+
+    def _txt(key: str, default: str = "") -> str:
+        value = ed.get(key, default)
+        return html.escape(str(value))
+
+    venue_name = _txt("venue_name", "Venue")
+    venue_address = _txt("venue_address")
+    date = _txt("date")
+    time = _txt("time")
+    party_size = _txt("party_size")
+    condition = _txt("condition")
+    temperature_c = _txt("temperature_c")
+    total_gbp = _txt("total_gbp")
+    deposit_gbp = _txt("deposit_required_gbp")
+
+    # CSS kept as a plain (non-f) string so its braces aren't f-string syntax.
+    style = (
+        "<style>"
+        "body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;"
+        "background:#f4f1ea;margin:0;padding:2rem;color:#1a1a1a;}"
+        "article{max-width:34rem;margin:0 auto;background:#fff;border:1px solid #e2ddd2;"
+        "border-radius:14px;padding:2rem 2.5rem;box-shadow:0 4px 16px rgba(0,0,0,.08);}"
+        "h1{margin:0 0 .2rem;font-size:1.9rem;}p.sub{margin:0 0 1.4rem;color:#6b6b6b;}"
+        "dl{display:grid;grid-template-columns:max-content 1fr;gap:.45rem 1.4rem;margin:0;}"
+        "dt{font-weight:600;color:#555;}dd{margin:0;}"
+        ".cost{margin-top:1.4rem;padding-top:1rem;border-top:2px solid #efe9dc;"
+        "font-size:1.15rem;}"
+        "</style>"
+    )
+
+    flyer_html = (
+        "<!DOCTYPE html>\n"
+        '<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        f"<title>{venue_name} — Event Booking</title>\n{style}\n</head>\n<body>\n"
+        "<article>\n"
+        f'  <h1 data-testid="venue_name">{venue_name}</h1>\n'
+        f'  <p class="sub" data-testid="venue_address">{venue_address}</p>\n'
+        "  <dl>\n"
+        f'    <dt>Date</dt><dd data-testid="date">{date}</dd>\n'
+        f'    <dt>Time</dt><dd data-testid="time">{time}</dd>\n'
+        f'    <dt>Party size</dt><dd data-testid="party_size">{party_size}</dd>\n'
+        f'    <dt>Weather</dt><dd data-testid="condition">{condition}</dd>\n'
+        f'    <dt>Temperature</dt><dd data-testid="temperature_c">{temperature_c}°C</dd>\n'
+        "  </dl>\n"
+        '  <dl class="cost">\n'
+        f'    <dt>Total</dt><dd data-testid="total_gbp">£{total_gbp}</dd>\n'
+        f'    <dt>Deposit due</dt><dd data-testid="deposit_required_gbp">£{deposit_gbp}</dd>\n'
+        "  </dl>\n"
+        "</article>\n</body>\n</html>\n"
+    )
+
+    workspace = session.workspace_dir
+    workspace.mkdir(parents=True, exist_ok=True)
+    flyer_path = workspace / "flyer.html"
+    data = flyer_html.encode("utf-8")
+    flyer_path.write_bytes(data)
+
+    rel_path = "workspace/flyer.html"
+    output = {"path": rel_path, "bytes_written": len(data)}
+    # Logging event_details makes the flyer's own facts traceable by the
+    # integrity check; a fact added to the HTML afterwards (the grader's
+    # planted £9999) appears in no record and is flagged.
+    record_tool_call("generate_flyer", {"event_details": ed}, output)
+    return ToolResult(
+        success=True,
+        output=output,
+        summary=f"generate_flyer: wrote {rel_path} ({len(flyer_html)} chars)",
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,21 @@
+{
+  "ticket_id": "tk_618114c7",
+  "operation": "planner.plan",
+  "started_at": "2026-05-21T20:08:42.528652+00:00",
+  "completed_at": "2026-05-21T20:08:56.626912+00:00",
+  "duration_ms": 14098,
+  "outputs": [
+    {
+      "path": "/home/witnessofthe/.local/share/sovereign-agent/examples/ex5-wellspecified/sess_a54bf2c673ed/logs/tickets/tk_618114c7/raw_output.json",
+      "sha256": "37b1426fbdd965164c079e60474f4c165a92232949c91b97a53f622d803c96fc",
+      "size_bytes": 1484,
+      "content_type": "application/json"
+    }
+  ],
+  "metrics": {
+    "num_subgoals": 5,
+    "llm_tokens_in": 445,
+    "llm_tokens_out": 2352,
+    "llm_model": "Qwen/Qwen3-Next-80B-A3B-Thinking"
+  }
+}

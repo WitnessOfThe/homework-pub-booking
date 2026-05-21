@@ -2,25 +2,15 @@
 
 ## Your answer
 
-The planner produced two subgoals: sg_1 (research venues near Haymarket
-for a party of 6, assigned to loop) and sg_2 (produce a flyer with the
-chosen venue, weather, and cost, also loop). Both ran in the same
-executor session.
+Offline (`make ex5`) completes: flyer written, "dataflow OK: verified 4
+facts." I confirmed the guard directly — mutating `£540`→`£9999` in the flyer
+yields `dataflow FAIL: 1 unverified fact(s): ['£9999']`.
 
-Turn 1 called venue_search, get_weather, and calculate_cost in parallel
-— all three are parallel_safe because they only read fixtures. Turn 2
-wrote the flyer via generate_flyer (parallel_safe=False because it
-writes a file). Turn 3 called complete_task.
-
-The dataflow integrity check caught one issue during development: the
-template for "no deposit required" originally read "total under £300
-threshold", which put £300 in the flyer prose. That value was never
-returned by any tool — it's a rule threshold, not data. I simplified
-the phrasing to "No deposit required for this booking." Without the
-integrity check this would have slipped past review because £300 looks
-like a reasonable number in the right context.
+Tested against real Nebius. In `sessions/sess_d33f553a7bfe` the executor
+spiralled: four `venue_search` calls (`trace.jsonl:3-6`) with a hallucinated party size of 50, zero results each time, then a handoff — no flyer. `sess_63d9cfe78440` spiralled differently (party 6 but `near='Edinburgh'`, which doesn't substring-match the fixture's district names). The offline `FakeLLMClient` hides this because the tool args are scripted; the real model, given an under-specified payload, fills the gap with wrong guesses.
 
 ## Citations
 
-- sessions/sess_*/logs/trace.jsonl — tool call sequence
-- sessions/sess_*/workspace/flyer.md — the produced flyer
+- `sessions/sess_d33f553a7bfe/logs/trace.jsonl:3-7` (real 4× venue_search spiral, party=50, no flyer)
+- `sessions/sess_63d9cfe78440/logs/trace.jsonl` (second spiral: wrong `near` values)
+- `starter/edinburgh_research/tools.py`, `integrity.py:118-164` (`verify_dataflow`)

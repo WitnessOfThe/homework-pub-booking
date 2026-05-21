@@ -1,0 +1,37 @@
+{
+  "subgoal_id": "sg_3",
+  "success": true,
+  "final_answer": "(handoff requested)",
+  "tool_calls_made": [
+    {
+      "name": "handoff_to_structured",
+      "arguments": {
+        "reason": "Missing required parameters for cost calculation",
+        "context": "Subgoal sg_3: Calculate total cost for venue with catering",
+        "data": {
+          "missing_parameters": [
+            "venue_id",
+            "party_size",
+            "duration_hours"
+          ]
+        }
+      },
+      "success": true,
+      "summary": "handoff to structured half: Missing required parameters for cost calculation",
+      "requires_human_approval": false
+    }
+  ],
+  "turns_used": 1,
+  "handoff_requested": true,
+  "handoff_payload": {
+    "reason": "Missing required parameters for cost calculation",
+    "context": "Subgoal sg_3: Calculate total cost for venue with catering",
+    "data": {
+      "missing_parameters": [
+        "venue_id",
+        "party_size",
+        "duration_hours"
+      ]
+    }
+  }
+}

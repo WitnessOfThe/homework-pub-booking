@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "from_half": "loop",
+  "to_half": "structured",
+  "written_at": "2026-05-21T20:05:47.777753+00:00",
+  "session_id": "sess_d33f553a7bfe",
+  "reason": "Venue search attempts have consistently returned zero results despite parameter adjustments. Need structured analysis to resolve data availability issues.",
+  "context": "Multiple venue_search calls with varying parameters (Edinburgh, City Centre, Old Town; party sizes 30-50; budgets 1000-2500 GBP) all returned empty results. Function appears non-functional for this use case.",
+  "data": {
+    "last_search_params": {
+      "near": "Old Town Edinburgh",
+      "party_size": 30,
+      "budget_max_gbp": 2500
+    },
+    "search_history": [
+      {
+        "near": "Edinburgh",
+        "party_size": 50,
+        "budget_max_gbp": 1000
+      },
+      {
+        "near": "Edinburgh City Centre",
+        "party_size": 50,
+        "budget_max_gbp": 1500
+      },
+      {
+        "near": "Edinburgh",
+        "party_size": 40,
+        "budget_max_gbp": 2000
+      },
+      {
+        "near": "Old Town Edinburgh",
+        "party_size": 30,
+        "budget_max_gbp": 2500
+      }
+    ]
+  },
+  "return_instructions": ""
+}

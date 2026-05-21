@@ -2,29 +2,20 @@
 
 ## Your answer
 
-The voice pipeline has two modes with shared trace-event contract:
-text mode (run_text_mode, shipped complete) reads stdin and the
-manager persona replies via Llama-3.3-70B; voice mode (run_voice_mode,
-implemented here) uses Speechmatics for STT.
+Text mode (`run_text_mode`) reads stdin and
+the `ManagerPersona` (real Llama-3.3-70B "Alasdair", `temperature=0`) replies;
+voice mode (`run_voice_mode`) adds Speechmatics STT and Rime TTS. Both emit
+`voice.utterance_in` (actor user) and `voice.utterance_out` (actor manager) with
+payload `{text, turn, mode}`, so grading is mode-agnostic.
 
-The critical design choice is graceful degradation. run_voice_mode
-checks SPEECHMATICS_KEY and the speechmatics-python import before
-doing anything else. If either is missing, it logs a warning and
-falls through to run_text_mode. This means CI can pass the "voice
-loop implemented" check without Speechmatics credentials — the same
-code runs, just under the simpler transport.
-
-Both modes emit voice.utterance_in and voice.utterance_out trace
-events with payload {text, turn, mode}. The mode field tells the
-grader which transport was in use. Same trace shape = identical
-downstream analysis.
-
-The ManagerPersona class holds a conversation history list and calls
-an LLM for each turn. It's deterministic given identical history +
-model seed, which makes the tests stable even though we talk to a
-real model.
+I ran text mode for real (`sessions/sess_fa65441a842e`): a 3-turn booking chat
+where the persona stayed in character ("Aye, we can do that. I'll pencil you in
+for Friday at half seven. What's the contact number?") and accepted a party of 6
+with a £150 deposit, per the rules. The trace carries exactly 3
+`voice.utterance_in` + 3 `voice.utterance_out` — clearing the ≥3-turn bar.
 
 ## Citations
 
-- starter/voice_pipeline/voice_loop.py — run_voice_mode
-- starter/voice_pipeline/manager_persona.py — LLM-backed persona
+- `sessions/sess_fa65441a842e/logs/trace.jsonl` (3-turn real conversation, 3× in / 3× out)
+- `starter/voice_pipeline/voice_loop.py:99-117` (degradation branch; the uncaught `OSError`)
+- `starter/voice_pipeline/manager_persona.py:22-41` (Alasdair system prompt + rules)

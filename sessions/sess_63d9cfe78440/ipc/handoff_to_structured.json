@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "from_half": "loop",
+  "to_half": "structured",
+  "written_at": "2026-05-21T20:07:49.284002+00:00",
+  "session_id": "sess_63d9cfe78440",
+  "reason": "No venues found for party size 6 in Edinburgh across multiple search attempts. Need human guidance to adjust parameters or confirm availability.",
+  "context": "Venue search returned zero results despite varying location (Old Town, City Centre, Edinburgh-wide) and budget (200-500 GBP).",
+  "data": {
+    "last_search_params": {
+      "near": "Edinburgh",
+      "party_size": 6,
+      "budget_max_gbp": 500
+    }
+  },
+  "return_instructions": ""
+}
